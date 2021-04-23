@@ -12,7 +12,6 @@ contract CryptoCoffee is ERC721URIStorage {
   
   event newNFTminted(address owner, uint256 newTokenId);
   event nftPriceSet(uint256 tokenId, uint256 amount);
-//  event Purchase(address buyer, uint256 tokenId, uint256 amount);
   event SaleSuccessful(uint256 tokenId, uint256 price, address buyer);
   
   struct NFT {
@@ -32,7 +31,6 @@ contract CryptoCoffee is ERC721URIStorage {
   mapping(string => uint8) hashes;
   mapping(address => NFT) collectibles;
   mapping(uint256 => address) coffeeIndexToOwner;
-//  mapping(uint256 => uint256) tokenIdToPrice;
   mapping (uint256 => Sale) tokenIdToSale;
 
 
@@ -55,8 +53,6 @@ contract CryptoCoffee is ERC721URIStorage {
   
     require(_exists(_tokenId));
     require(_isApprovedOrOwner(msg.sender, _tokenId));
-    
-//    tokenIdToPrice[_tokenId] = _amount;
 
     Sale storage sale = tokenIdToSale[_tokenId];
     sale.seller = payable(msg.sender); // seller address
@@ -65,14 +61,6 @@ contract CryptoCoffee is ERC721URIStorage {
     
     emit nftPriceSet(_tokenId, _amount);
   }
-  
-/* Not used anymore.
-  function sell_NFT(address _owner, address _buyer, uint256 _tokenId) public {
-    require(_exists(_tokenId));
-    require(_isApprovedOrOwner(_owner, _tokenId));
-    require(_buyer != address(0));
-  }
-*/
 
   function transfer_NFT(address _buyer, uint _tokenId) public {
   
@@ -84,11 +72,8 @@ contract CryptoCoffee is ERC721URIStorage {
     require(msg.sender != address(0));
     require(_exists(_tokenId));
     
-//    _seller.transfer(tokenIdToPrice[_tokenId]);
-//    emit Purchase(msg.sender, _tokenId, tokenIdToPrice[_tokenId]);
-    
-    _safeTransfer(_seller, msg.sender, _tokenId);
-    emit Transfer(_seller, msg.sender, _tokenId);
+    _safeTransfer(msg.sender, _buyer, _tokenId);
+    emit Transfer(msg.sender, _buyer, _tokenId);
   }
 
   function burn_NFT(address _owner, uint256 _tokenId) public {
@@ -131,10 +116,12 @@ contract CryptoCoffee is ERC721URIStorage {
   }  
 
 //  function penalty_on_NFT(NFT memory nft) public {}
-// penalty on NFT not implemented.
+//  penalty on NFT not implemented.
 
-/* user_NFTs not done yet. there is a function in cryptokitties which
-// does the same thing. I was trying to copy and modify that.
+/* 
+
+  user_NFTs not done yet. there is a function in cryptokitties which
+  does the same thing. I was trying to copy and modify that.
 
   function user_NFTs(address _owner) external view returns (NFT[]) {
       
