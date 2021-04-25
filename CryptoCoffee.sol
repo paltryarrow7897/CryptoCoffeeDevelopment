@@ -35,7 +35,7 @@ contract CryptoCoffee is ERC721URIStorage {
 
 
   function mint_NFT(string memory _hash, string memory _metadata) public {
-    require(hashes[_hash] != 1, 'Hash has already been used!');
+    require(hashes[_hash] != 1);
     hashes[_hash] = 1;
     _tokenIds.increment();
     uint256 newTokenId = _tokenIds.current();
@@ -72,7 +72,7 @@ contract CryptoCoffee is ERC721URIStorage {
     require(msg.sender != address(0));
     require(_exists(_tokenId));
     
-    _safeTransfer(msg.sender, _buyer, _tokenId);
+    safeTransferFrom(msg.sender, _buyer, _tokenId);
     emit Transfer(msg.sender, _buyer, _tokenId);
   }
 
@@ -90,7 +90,7 @@ contract CryptoCoffee is ERC721URIStorage {
   function buyAtSale(uint256 _tokenId, uint256 _price) public payable {
   
   // I tried copying cryptokitties auction contract.
-  // what is should do is allow buyer to transfer ether to seller's
+  // what it should do is allow buyer to transfer ether to seller's
   // address. if buyer's price is more than seller's price, refund 
   // is issued and the sale for that NFT ends so that no other buyer
   // can accidentally pay for the sold NFT.
