@@ -28,20 +28,22 @@ contract CryptoCoffee is ERC721URIStorage {
 
   NFT[] nfts;
   
-  mapping(string => uint8) hashes;
+  mapping(string => bool) hashExists;
+  mapping(uint256 => string) tokenIdToHash;
   mapping(address => NFT) collectibles;
   mapping(uint256 => address) coffeeIndexToOwner;
   mapping (uint256 => Sale) tokenIdToSale;
 
 
   function mint_NFT(string memory _hash, string memory _metadata) public {
-    require(hashes[_hash] != 1);
-    hashes[_hash] = 1;
-    _tokenIds.increment();
-    uint256 newTokenId = _tokenIds.current();
-    _safeMint(msg.sender, newTokenId);
-    _setTokenURI(newTokenId, _metadata);
-    emit newNFTminted(msg.sender, newTokenId);
+    require(hashExists[_hash] != true);               // checks if hash of the NFT exists.
+    hashExists[_hash] = true;                         // set hash exists for new NFTs.
+    _tokenIds.increment();                            // incement token id.
+    uint256 newTokenId = _tokenIds.current();         // give token id to the NFT.
+    tokenIdToHash[newTokenId] = _hash;                // map token id to its hash.
+    _safeMint(msg.sender, newTokenId);                // mint new token.
+    _setTokenURI(newTokenId, _metadata);              // set metadata for token.
+    emit newNFTminted(msg.sender, newTokenId);        // trigger minted event.
   }
   
   function setPricePutOnSale(uint _tokenId, uint128 _amount) public {
@@ -55,11 +57,10 @@ contract CryptoCoffee is ERC721URIStorage {
     require(_isApprovedOrOwner(msg.sender, _tokenId));
 
     Sale storage sale = tokenIdToSale[_tokenId];
-    sale.seller = payable(msg.sender); // seller address
-    sale.price = _amount; // seller sets NFT price
-    sale.onSale = true; // seller turns on put on sale 
-    
-    emit nftPriceSet(_tokenId, _amount);
+    sale.seller = payable(msg.sender);        // seller address
+    sale.price = _amount;                     // seller sets NFT price
+    sale.onSale = true;                       // seller turns on put on sale 
+    emit nftPriceSet(_tokenId, _amount);      // trigger price set event.
   }
 
   function transfer_NFT(address _buyer, uint _tokenId) public {
@@ -79,12 +80,12 @@ contract CryptoCoffee is ERC721URIStorage {
   function burn_NFT(address _owner, uint256 _tokenId) public {
   
   // this burns NFT but doesn't give back ingredients.
-  // I haven't given much time to it yet.
-  // only owner can burn his NFT.
   
-      require(_exists(_tokenId));
-      require(_isApprovedOrOwner(_owner, _tokenId));
-      _burn(_tokenId);
+      require(_exists(_tokenId));                         // NFT to burn must exist.
+      require(_isApprovedOrOwner(_owner, _tokenId));      // Only owner or approved can burn NFT.
+      require(tokenIdToSale[_tokenId].onSale != true);    // NFT must not be on sale when burned.
+      delete hashExists[tokenIdToHash[_tokenId]];         // delete hash so in future, same NFT can be minted again. Can be removed if burned NFT should never be minted again.
+      _burn(_tokenId);                                    // burn NFT after deleting its hash.
   }
   
   function buyAtSale(uint256 _tokenId, uint256 _price) public payable {
@@ -110,10 +111,18 @@ contract CryptoCoffee is ERC721URIStorage {
       
       emit SaleSuccessful(_tokenId, sale.price, msg.sender);
   }
-  
+
   function _removeSale(uint256 _tokenId) internal {
-      delete tokenIdToSale[_tokenId];
-  }  
+  // internal function to avoid a different buyer to accidentally pay for a sold NFT.
+     delete tokenIdToSale[_tokenId];
+  }
+  
+  function stopSale(uint256 _tokenId) public {
+  // public function to allow owner to manually remove NFT from sale.
+  // can be executed if owner wants to change selling price or burn NFT or does not want to sell an NFT any more.
+     require(_isApprovedOrOwner(msg.sender, _tokenId));
+     delete tokenIdToSale[_tokenId];
+  }
 
 //  function penalty_on_NFT(NFT memory nft) public {}
 //  penalty on NFT not implemented.
