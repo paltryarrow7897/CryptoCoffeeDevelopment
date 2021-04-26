@@ -30,8 +30,8 @@ contract CryptoCoffee is ERC721URIStorage {
   
   mapping(string => bool) hashExists;
   mapping(uint256 => string) tokenIdToHash;
+  mapping(uint256 => address) tokenIdToOwner;
   mapping(address => NFT) collectibles;
-  mapping(uint256 => address) coffeeIndexToOwner;
   mapping (uint256 => Sale) tokenIdToSale;
 
 
@@ -43,6 +43,7 @@ contract CryptoCoffee is ERC721URIStorage {
     tokenIdToHash[newTokenId] = _hash;                // map token id to its hash.
     _safeMint(msg.sender, newTokenId);                // mint new token.
     _setTokenURI(newTokenId, _metadata);              // set metadata for token.
+    tokenIdToOwner[newTokenId] = msg.sender;          // map token id to its owner.
     emit newNFTminted(msg.sender, newTokenId);        // trigger minted event.
   }
   
@@ -61,20 +62,6 @@ contract CryptoCoffee is ERC721URIStorage {
     sale.price = _amount;                     // seller sets NFT price
     sale.onSale = true;                       // seller turns on put on sale 
     emit nftPriceSet(_tokenId, _amount);      // trigger price set event.
-  }
-
-  function transfer_NFT(address _buyer, uint _tokenId) public {
-  
-  // this needs editing.
-  // this function should be called by the seller only.
-  // seller transfers NFT after confirming payment.
-  
-    require(_buyer != address(0));
-    require(msg.sender != address(0));
-    require(_exists(_tokenId));
-    
-    safeTransferFrom(msg.sender, _buyer, _tokenId);
-    emit Transfer(msg.sender, _buyer, _tokenId);
   }
 
   function burn_NFT(address _owner, uint256 _tokenId) public {
@@ -96,20 +83,27 @@ contract CryptoCoffee is ERC721URIStorage {
   // is issued and the sale for that NFT ends so that no other buyer
   // can accidentally pay for the sold NFT.
   
+  // Edit: buyAtSale now automatically transfers token from seller address to buyer address.
+  // No separate transfer function needed any more.
+  
       Sale storage sale = tokenIdToSale[_tokenId];
-      require(sale.onSale);
-      require(_price >= sale.price);
+      require(sale.onSale);                   // token must be on sale.
+      require(_price >= sale.price);          // buyer must pay at least what seller asks for.
       
       _removeSale(_tokenId);
       
-      if (sale.price > 0) {
-          sale.seller.transfer(sale.price);
+      if (sale.price > 0) {                   // if seller asks for more than 0 wei,
+          sale.seller.transfer(sale.price);   // transfer wei to seller.
       }
       
-      uint256 excess = _price - sale.price;
-      payable(msg.sender).transfer(excess);
-      
+      uint256 excess = _price - sale.price;   // check if buyer is paying extra amount.
+      payable(msg.sender).transfer(excess);   // send back excess amount.
       emit SaleSuccessful(_tokenId, sale.price, msg.sender);
+      
+      _transfer(tokenIdToOwner[_tokenId], msg.sender, _tokenId);      // transfer ownership after successful sale.
+      emit Transfer(tokenIdToOwner[_tokenId], msg.sender, _tokenId);
+      
+      tokenIdToOwner[_tokenId] = msg.sender;  // map token id to its new owner.
   }
 
   function _removeSale(uint256 _tokenId) internal {
