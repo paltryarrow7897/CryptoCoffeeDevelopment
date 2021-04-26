@@ -73,12 +73,12 @@ contract CryptoCoffee is ERC721URIStorage {
     emit nftPriceSet(_tokenId, _amount);      // trigger price set event.
   }
 
-  function burn_NFT(address _owner, uint256 _tokenId) public {
+  function burn_NFT(uint256 _tokenId) public {
   
   // this burns NFT but doesn't give back ingredients.
   
       require(_exists(_tokenId), "Token ID does not exist.");                                     // NFT to burn must exist.
-      require(_isApprovedOrOwner(_owner, _tokenId), "You do not have permission.");               // Only owner or approved can burn NFT.
+      require(_isApprovedOrOwner(msg.sender, _tokenId), "You do not have permission.");           // Only owner or approved can burn NFT.
       require(tokenIdToSale[_tokenId].onSale != true, "Can not burn if token is on sale.");       // NFT must not be on sale when burned.
       
       delete hashExists[tokenIdToNft[_tokenId].hash];     // delete hash so in future, same NFT can be minted again. Can be removed if burned NFT should never be minted again.
