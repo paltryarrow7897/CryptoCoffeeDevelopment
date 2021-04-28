@@ -9,7 +9,7 @@ contract CryptoCoffee is ERC721URIStorage, Ownable {
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIds;
   
-    constructor() ERC721('Token', 'NFT') {}
+    constructor() ERC721('Token', 'NFT') {} // Change name and symbol to something cryptocoffee related.
     receive() external payable {}
   
     event nftPriceSet(uint256 tokenId, uint256 amount);
@@ -37,6 +37,10 @@ contract CryptoCoffee is ERC721URIStorage, Ownable {
     }
 
   function mintNFT(string memory _name, string memory _hash, string memory _metadata, uint128 _mintingCost) external payable {
+  
+  // This function takes in generated hash, metadata and mintingCost, and an input name for the token.
+  // Now, this is a payable function, user will pay to mint his token, change later to blend.
+  
       require(hashExists[_hash] != true);
       require(msg.value == _mintingCost);
     
@@ -67,6 +71,10 @@ contract CryptoCoffee is ERC721URIStorage, Ownable {
   }
   
   function burnNFT(uint256 _tokenId) external payable onlySeller(_tokenId) {
+  
+  // This function now allows sending some of the minting cost back to the user.
+  // Set to 75% return right now, change as needed.
+  
       require(tokenIdToNft[_tokenId].onSale != true);
       delete hashExists[tokenIdToNft[_tokenId].hash];
       delete tokenIdToNft[_tokenId];
@@ -104,22 +112,34 @@ contract CryptoCoffee is ERC721URIStorage, Ownable {
   }
   
   function changeName(uint256 _tokenId, string memory _newName) external onlySeller(_tokenId) {
+  
+  // Added functionality to change token name. Can be changed to payable if needed.
+  
       emit nameChanged(_tokenId, tokenIdToNft[_tokenId].asset, _newName);
       tokenIdToNft[_tokenId].asset = _newName;
   }
 
   function giftNFT(address _giftTo, uint256 _tokenId) external onlySeller(_tokenId) {
+  
+  // Added functionality to send a token to another address as a gift.
+  
       require(tokenIdToNft[_tokenId].onSale != true);
       safeTransferFrom(msg.sender, _giftTo, _tokenId);
       emit Transfer(msg.sender, _giftTo, _tokenId);
   }
   
   function tokenOfOwnerByIndex(address _owner, uint256 _index) internal view returns (uint256) {
+  
+  // Used internally for owned_NFTs. Copied from ERC721Enumerable contract.
+  
       require(_index < balanceOf(_owner));
       return _ownedTokens[_owner][_index];
   }
   
   function owned_NFTs() external view returns (uint256[] memory) {
+  
+  // This needs fix. No compile errors, but unexpected result.
+  
       uint256[] memory nftList;
       uint listIndex = 0;
       uint256 tokenIndex;
