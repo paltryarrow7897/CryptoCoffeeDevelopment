@@ -6,34 +6,34 @@ import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/utils/Counters.sol';
 
 contract CryptoCoffee is ERC721URIStorage, Ownable {
-    using Counters for Counters.Counter;
-    Counters.Counter private _tokenIds;
+  using Counters for Counters.Counter;
+  Counters.Counter private _tokenIds;
   
-    constructor() ERC721('Token', 'NFT') {} // Change name and symbol to something cryptocoffee related.
-    receive() external payable {}
+  constructor() ERC721('Token', 'NFT') {} // Change name and symbol to something cryptocoffee related.
+  receive() external payable {}
   
-    event nftPriceSet(uint256 tokenId, uint256 amount);
-    event SaleSuccessful(uint256 tokenId, uint256 price, address buyer);
-    event nameChanged(uint256 tokenId, string oldName, string newName);
+  event nftPriceSet(uint256 tokenId, uint256 amount);
+  event SaleSuccessful(uint256 tokenId, uint256 price, address buyer);
+  event nameChanged(uint256 tokenId, string oldName, string newName);
   
-    struct NFT {
+  struct NFT {
       address payable owner;
       uint128 price;
       bool onSale;
       string metadata;
       string asset;
       string hash;
-    }
+  }
   
-    mapping(string => bool) hashExists;
-    mapping(uint256 => NFT) tokenIdToNft;
-    mapping(uint256 => uint128) tokenIdToMintingCost;
+  mapping(string => bool) hashExists;
+  mapping(uint256 => NFT) tokenIdToNft;
+  mapping(uint256 => uint128) tokenIdToMintingCost;
     
-    modifier onlySeller(uint256 _tokenId) {
-        require(_exists(_tokenId));
-        require(_isApprovedOrOwner(msg.sender, _tokenId));
-        _;
-    }
+  modifier onlySeller(uint256 _tokenId) {
+      require(_exists(_tokenId));
+      require(_isApprovedOrOwner(msg.sender, _tokenId));
+      _;
+  }  
     
   function supportsInterface(bytes4 interfaceId) public view virtual override(ERC721Enumerable, ERC721) returns (bool) {
       return interfaceId == type(IERC721Enumerable).interfaceId || super.supportsInterface(interfaceId);
