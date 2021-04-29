@@ -5,11 +5,11 @@ import '@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/utils/Counters.sol';
 
-contract CryptoCoffee is ERC721URIStorage, Ownable {
+contract CryptoCoffee is ERC721Enumerable, ERC721URIStorage, Ownable {
   using Counters for Counters.Counter;
   Counters.Counter private _tokenIds;
   
-  constructor() ERC721('Token', 'NFT') {} // Change name and symbol to something cryptocoffee related.
+  constructor() ERC721('Token', 'NFT') {}
   receive() external payable {}
   
   event nftPriceSet(uint256 tokenId, uint256 amount);
