@@ -5,6 +5,89 @@ import '@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/utils/Counters.sol';
 
+abstract contract ERC721Enumerable is ERC721URIStorage, IERC721Enumerable {
+    
+    mapping(address => mapping(uint256 => uint256)) private _ownedTokens;
+    mapping(uint256 => uint256) private _ownedTokensIndex;
+    uint256[] private _allTokens;
+    mapping(uint256 => uint256) private _allTokensIndex;
+    
+    function supportsInterface(bytes4 interfaceId) public view virtual override(IERC165, ERC721) returns (bool) {
+        return interfaceId == type(IERC721Enumerable).interfaceId
+            || super.supportsInterface(interfaceId);
+    }
+    
+    function tokenOfOwnerByIndex(address owner, uint256 index) public view virtual override returns (uint256) {
+        require(index < ERC721.balanceOf(owner), "ERC721Enumerable: owner index out of bounds");
+        return _ownedTokens[owner][index];
+    }
+    
+    function totalSupply() public view virtual override returns (uint256) {
+        return _allTokens.length;
+    }
+    
+    function tokenByIndex(uint256 index) public view virtual override returns (uint256) {
+        require(index < ERC721Enumerable.totalSupply(), "ERC721Enumerable: global index out of bounds");
+        return _allTokens[index];
+    }
+    
+    function _beforeTokenTransfer(address from, address to, uint256 tokenId) internal virtual override {
+        super._beforeTokenTransfer(from, to, tokenId);
+
+        if (from == address(0)) {
+            _addTokenToAllTokensEnumeration(tokenId);
+        } else if (from != to) {
+            _removeTokenFromOwnerEnumeration(from, tokenId);
+        }
+        if (to == address(0)) {
+            _removeTokenFromAllTokensEnumeration(tokenId);
+        } else if (to != from) {
+            _addTokenToOwnerEnumeration(to, tokenId);
+        }
+    }
+    
+    function _addTokenToOwnerEnumeration(address to, uint256 tokenId) private {
+        uint256 length = ERC721.balanceOf(to);
+        _ownedTokens[to][length] = tokenId;
+        _ownedTokensIndex[tokenId] = length;
+    }
+    
+    function _addTokenToAllTokensEnumeration(uint256 tokenId) private {
+        _allTokensIndex[tokenId] = _allTokens.length;
+        _allTokens.push(tokenId);
+    }
+    
+    function _removeTokenFromOwnerEnumeration(address from, uint256 tokenId) private {
+
+        uint256 lastTokenIndex = ERC721.balanceOf(from) - 1;
+        uint256 tokenIndex = _ownedTokensIndex[tokenId];
+
+        if (tokenIndex != lastTokenIndex) {
+            uint256 lastTokenId = _ownedTokens[from][lastTokenIndex];
+
+            _ownedTokens[from][tokenIndex] = lastTokenId;
+            _ownedTokensIndex[lastTokenId] = tokenIndex;
+        }
+
+        delete _ownedTokensIndex[tokenId];
+        delete _ownedTokens[from][lastTokenIndex];
+    }
+    
+    function _removeTokenFromAllTokensEnumeration(uint256 tokenId) private {
+
+        uint256 lastTokenIndex = _allTokens.length - 1;
+        uint256 tokenIndex = _allTokensIndex[tokenId];
+
+        uint256 lastTokenId = _allTokens[lastTokenIndex];
+
+        _allTokens[tokenIndex] = lastTokenId;
+        _allTokensIndex[lastTokenId] = tokenIndex;
+
+        delete _allTokensIndex[tokenId];
+        _allTokens.pop();
+    }
+}
+
 contract CryptoCoffee is ERC721URIStorage, Ownable {
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIds;
@@ -28,7 +111,6 @@ contract CryptoCoffee is ERC721URIStorage, Ownable {
     mapping(string => bool) hashExists;
     mapping(uint256 => NFT) tokenIdToNft;
     mapping(uint256 => uint128) tokenIdToMintingCost;
-    mapping(address => mapping(uint256 => uint256)) private _ownedTokens;
     
     modifier onlySeller(uint256 _tokenId) {
         require(_exists(_tokenId));
@@ -37,10 +119,6 @@ contract CryptoCoffee is ERC721URIStorage, Ownable {
     }
 
   function mintNFT(string memory _name, string memory _hash, string memory _metadata, uint128 _mintingCost) external payable {
-  
-  // This function takes in generated hash, metadata and mintingCost, and an input name for the token.
-  // Now, this is a payable function, user will pay to mint his token, change later to blend.
-  
       require(hashExists[_hash] != true);
       require(msg.value == _mintingCost);
     
@@ -71,10 +149,6 @@ contract CryptoCoffee is ERC721URIStorage, Ownable {
   }
   
   function burnNFT(uint256 _tokenId) external payable onlySeller(_tokenId) {
-  
-  // This function now allows sending some of the minting cost back to the user.
-  // Set to 75% return right now, change as needed.
-  
       require(tokenIdToNft[_tokenId].onSale != true);
       delete hashExists[tokenIdToNft[_tokenId].hash];
       delete tokenIdToNft[_tokenId];
@@ -112,41 +186,22 @@ contract CryptoCoffee is ERC721URIStorage, Ownable {
   }
   
   function changeName(uint256 _tokenId, string memory _newName) external onlySeller(_tokenId) {
-  
-  // Added functionality to change token name. Can be changed to payable if needed.
-  
       emit nameChanged(_tokenId, tokenIdToNft[_tokenId].asset, _newName);
       tokenIdToNft[_tokenId].asset = _newName;
   }
 
   function giftNFT(address _giftTo, uint256 _tokenId) external onlySeller(_tokenId) {
-  
-  // Added functionality to send a token to another address as a gift.
-  
       require(tokenIdToNft[_tokenId].onSale != true);
       safeTransferFrom(msg.sender, _giftTo, _tokenId);
       emit Transfer(msg.sender, _giftTo, _tokenId);
   }
   
-  function tokenOfOwnerByIndex(address _owner, uint256 _index) internal view returns (uint256) {
-  
-  // Used internally for owned_NFTs. Copied from ERC721Enumerable contract.
-  
-      require(_index < balanceOf(_owner));
-      return _ownedTokens[_owner][_index];
-  }
-  
   function owned_NFTs() external view returns (uint256[] memory) {
-  
-  // This needs fix. No compile errors, but unexpected result.
-  
-      uint256[] memory nftList;
-      uint listIndex = 0;
+      uint256[] memory nftList = new uint256[](balanceOf(msg.sender));
       uint256 tokenIndex;
       
       for (tokenIndex = 0; tokenIndex < balanceOf(msg.sender); tokenIndex++) {
-          nftList[listIndex] = tokenOfOwnerByIndex(msg.sender, tokenIndex);
-          listIndex++;
+          nftList[tokenIndex] = tokenOfOwnerByIndex(msg.sender, tokenIndex);
           }
       return nftList;
   }
