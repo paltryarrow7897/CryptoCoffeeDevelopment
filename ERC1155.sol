@@ -1,3 +1,6 @@
+/* ERC1155Preset. ****************************************
+** Creates ingredients as tokens with arbitrary supply. */
+
 pragma solidity ^0.8.0;
 
 import '@openzeppelin/contracts/token/ERC1155/presets/ERC1155PresetMinterPauser.sol';
