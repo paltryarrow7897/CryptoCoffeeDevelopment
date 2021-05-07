@@ -1,7 +1,7 @@
-/* Main contract for CryptoCoffee. **********************
-** Users buy custom ERC20 tokens for ETH. ***************
-** Use tokens to buy ingredients for further processes. *
-** Use ingredients to make new NFTs. *******************/
+/* Main contract for CryptoCoffee. *******************
+** Users buy custom ERC20 tokens for ETH. ************
+** Use tokens to buy ingredients for further processes.
+** Use ingredients to make new NFTs. *****************/
 
 pragma solidity ^0.8.0;
 
