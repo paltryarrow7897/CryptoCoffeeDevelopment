@@ -1,12 +1,17 @@
+/* Main contract for CryptoCoffee. **********************
+** Users buy custom ERC20 tokens for ETH. ***************
+** Use tokens to buy ingredients for further processes. *
+** Use ingredients to make new NFTs. *******************/
+
 pragma solidity ^0.8.0;
 
-import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import '@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol';
-import '@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol';
-import '@openzeppelin/contracts/token/ERC1155/IERC1155.sol';
-import '@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol';
-import '@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol';
-import '@openzeppelin/contracts/access/Ownable.sol';
+import '@openzeppelin/contracts/token/ERC20/IERC20.sol';                                // ERC20
+import '@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol';         // ERC721
+import '@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol';          // ERC721
+import '@openzeppelin/contracts/token/ERC1155/IERC1155.sol';                            // ERC1155
+import '@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol';                    // ERC1155
+import '@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol';                 // ERC1155
+import '@openzeppelin/contracts/access/Ownable.sol';                                    // Ownable right now. Add Access Control.
 import '@openzeppelin/contracts/utils/Counters.sol';
 
 
@@ -19,6 +24,8 @@ contract CryptoCoffee is ERC1155Holder, ERC721URIStorage, Ownable {
     Counters.Counter private _tokenIds;
     
     constructor(IERC20 ERC20Token, IERC1155 ERC1155Token) ERC721('CryptoCoffee', 'CRPTCF') {
+    // @param ERC20Token: ERC20 Contract Address.
+    // @param ERC1155Token: ERC1155 Contract Address.
         _token = ERC20Token;
         _IERC1155token = ERC1155Token;
     }
@@ -52,12 +59,14 @@ contract CryptoCoffee is ERC1155Holder, ERC721URIStorage, Ownable {
     }
     
     function buyRicheduToken() external payable {
+    // @param msg.value: Enter wei to get ERC20 tokens.
         require(msg.value > 0);
         require(_token.balanceOf(address(this)) >= msg.value);
         _token.transfer(msg.sender, (10**18)*msg.value);
     }
     
     function sellRicheduToken(uint256 _amount) external {
+    // @param _amount: number of ERC20 tokens to get wei.
         require(_amount > 0);
         require(_token.allowance(msg.sender, address(this)) >= (10**18)*_amount);
         _token.transferFrom(msg.sender, address(this), (10**18)*_amount);
@@ -65,10 +74,14 @@ contract CryptoCoffee is ERC1155Holder, ERC721URIStorage, Ownable {
     }
     
     function buyIngredients(uint256[] memory _ingredientIds, uint256[] memory _amounts, uint256[] memory _prices) external {
+    // @param _ingredientIds: array of ingredient IDs.
+    // @param _amounts: arrary of quantities of ingredients.
+    // @param _prices: array of prices of ingredients after multiplying with quantities.
         require(_ingredientIds.length != 0);
         require((_ingredientIds.length == _amounts.length) && (_ingredientIds.length == _prices.length));
         
         if (_ingredientIds.length == 1) {
+        // for one ingredient.
             require(_token.allowance(msg.sender, address(this)) >= (10**18)*_prices[0], "Check allowance.");
             require(_IERC1155token.balanceOf(address(this), _ingredientIds[0]) >= _amounts[0], "Not enough inventory.");
             _IERC1155token.safeTransferFrom(address(this), msg.sender, _ingredientIds[0], _amounts[0], "");
@@ -76,6 +89,7 @@ contract CryptoCoffee is ERC1155Holder, ERC721URIStorage, Ownable {
         }
         
         else {
+        // for more than one ingredient.
             uint256 len = _ingredientIds.length;
             uint256 totalPrice = 0;
             for (uint256 i = 0; i < len; i++) {
