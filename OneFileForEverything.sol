@@ -1,5 +1,7 @@
 pragma solidity ^0.8.0;
 
+// If using Remix, probably will ask you to enable optimization.
+
 // ERC20 files.
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol';
@@ -20,12 +22,17 @@ import '@openzeppelin/contracts/utils/Counters.sol';
 
 contract CyberCafe is ERC20PresetFixedSupply {
 // Deploy first.
+// Has all functions we'll need for custom ERC20 token.
+// I used it, maybe you won't.
     constructor() ERC20PresetFixedSupply('CyberCafe','CYCAFE', 10**27, msg.sender) {}
 }
 
 
 contract CafeIngredients is ERC1155PresetMinterPauser {
 // Deploy second.
+// Has all functions to make ingredient tokens.
+// Similar to ERC20 preset, I used it, maybe you won't.
+// Change the uri, it doesn't point to anything right now, page doesn't exist.
     constructor() ERC1155PresetMinterPauser("https://token-cdn-domain/{id}.json") {}
 }
 
@@ -92,13 +99,13 @@ contract CryptoCoffee is ERC1155Holder, ERC721Enumerable, ERC721URIStorage, Owna
         return super.tokenURI(tokenId);
     }
     
-    function buyCYCAFE() external payable {
+    function buyCYCAFE() external payable { // WORKS. Users pay ETH or BNB and get custom ERC20 token.
         require(msg.value > 0);
         require(_token.balanceOf(address(this)) >= msg.value);
         _token.transfer(msg.sender, msg.value);
     }
     
-    function sellCYCAFE(uint256 _amount) external {
+    function sellCYCAFE(uint256 _amount) external { // WORKS. Users pay custom ERC20 tokens to get back ETH or BNB.
         require(_amount > 0);
         require(_token.allowance(msg.sender, address(this)) >= _amount);
         _token.transferFrom(msg.sender, address(this), _amount);
@@ -106,6 +113,7 @@ contract CryptoCoffee is ERC1155Holder, ERC721Enumerable, ERC721URIStorage, Owna
     }
     
     function buyIngredients(uint256[] memory _ingredientIds, uint256[] memory _amounts, uint256[] memory _prices) external {
+    // WORKS. Users pay custom ERC20 tokens to buy ingredient tokens.
         require(_ingredientIds.length != 0);
         require((_ingredientIds.length == _amounts.length) && (_ingredientIds.length == _prices.length));
         
@@ -136,6 +144,7 @@ contract CryptoCoffee is ERC1155Holder, ERC721Enumerable, ERC721URIStorage, Owna
                     uint256[] memory _amounts, 
                     uint8[] memory _rarity) 
         external {
+        // WORKS. Users consume ingredients to make ERC721 token.
             
         require(hashExists[_hash] != true);
         hashExists[_hash] = true;
@@ -164,6 +173,7 @@ contract CryptoCoffee is ERC1155Holder, ERC721Enumerable, ERC721URIStorage, Owna
     }
     
     function setPricePutOnSale(uint _tokenId, uint256 _amount) external onlySeller(_tokenId) {
+    // WORKS.
         NFT storage nft = tokenIdToNft[_tokenId];
         nft.owner = msg.sender;
         nft.price = _amount;
@@ -172,6 +182,8 @@ contract CryptoCoffee is ERC1155Holder, ERC721Enumerable, ERC721URIStorage, Owna
     }
     
     function burnNFT(uint256 _tokenId) external onlySeller(_tokenId) {
+    // DOES NOT WORK.
+    // Change this.
         require(tokenIdToNft[_tokenId].onSale != true);
         
         delete hashExists[tokenIdToNft[_tokenId].hash];
@@ -200,6 +212,7 @@ contract CryptoCoffee is ERC1155Holder, ERC721Enumerable, ERC721URIStorage, Owna
     }
     
     function buyAtSale(uint256 _tokenId, uint256 userPays) external {
+    // WORKS. 
         NFT storage nft = tokenIdToNft[_tokenId];
         require(nft.onSale);
         require(nft.price == userPays);
@@ -217,20 +230,24 @@ contract CryptoCoffee is ERC1155Holder, ERC721Enumerable, ERC721URIStorage, Owna
     }
     
     function _removeSale(uint256 _tokenId) internal {
+    // WORKS.
         delete tokenIdToNft[_tokenId].onSale;
     }
     
     function stopSale(uint256 _tokenId) external onlySeller(_tokenId) {
+    // WORKS.
         delete tokenIdToNft[_tokenId].onSale;
     }
     
     function giftNFT(address _giftTo, uint256 _tokenId) external onlySeller(_tokenId) {
+    // WORKS.
         require(tokenIdToNft[_tokenId].onSale != true);
         safeTransferFrom(msg.sender, _giftTo, _tokenId);
         emit Transfer(msg.sender, _giftTo, _tokenId);
     }
     
     function owned_NFTs() external view returns (uint256[] memory) {
+    // WORKS.
         uint256[] memory nftList = new uint256[](balanceOf(msg.sender));
         uint256 tokenIndex;
         
@@ -241,6 +258,7 @@ contract CryptoCoffee is ERC1155Holder, ERC721Enumerable, ERC721URIStorage, Owna
     }
     
     function NFT_details(uint256 _tokenId) external view onlySeller(_tokenId) returns (NFT memory) {
+    // WORKS.
         return tokenIdToNft[_tokenId];
     }
 }
